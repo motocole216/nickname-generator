@@ -177,9 +177,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [x] Add retry mechanisms
 
 ### 7. Testing & Validation
-- [ ] Write unit tests for frontend components
-- [ ] Write API endpoint tests
-- [ ] Implement integration tests
+- [x] Write unit tests for backend controllers
+- [x] Write image processing tests
+- [x] Implement API endpoint tests
+- [ ] Write frontend component tests
+- [ ] Implement end-to-end tests
 - [ ] Perform security testing
 - [ ] Conduct performance optimization
 
@@ -219,3 +221,33 @@ The backend is built with Express and TypeScript, featuring:
 - Validation middleware using express-validator
 - Security middleware (helmet, cors, rate-limiting)
 - Body parsing middleware with size limits
+
+## Image Processing Features
+
+The application includes robust image processing capabilities:
+
+### Upload & Validation
+- Base64 image validation
+- File size limit (5MB)
+- Supported formats: JPEG, PNG, WebP
+- Automatic format optimization
+- Dimension constraints (max 2048px)
+
+### Storage Management
+- Cloudinary integration for reliable cloud storage
+- Automatic image optimization
+- Secure URL generation
+- Public ID management
+
+### Cleanup & Maintenance
+- Automatic cleanup of unused images (24-hour retention)
+- Manual image deletion capability
+- Batch cleanup operations
+- Error handling and recovery
+
+### Testing Coverage
+- Comprehensive unit tests for all image operations
+- Mock integration with Cloudinary
+- Error case handling
+- Validation testing
+- API endpoint testing
