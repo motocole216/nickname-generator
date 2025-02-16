@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 
 // Custom error classes
 export class AppError extends Error {
@@ -20,24 +20,25 @@ export class ValidationError extends AppError {
 }
 
 // Error handling middleware
-export const errorHandler = (
+export const errorHandler: ErrorRequestHandler = (
   err: Error | AppError,
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   if (err instanceof AppError) {
-    return res.status(err.statusCode).json({
+    res.status(err.statusCode).json({
       status: err.status,
       message: err.message,
     });
+    return;
   }
 
   // Log unexpected errors
   console.error('Error:', err);
 
   // Default error response
-  return res.status(500).json({
+  res.status(500).json({
     status: 'error',
     message: 'Something went wrong!',
   });

@@ -1,14 +1,18 @@
 import { describe, it, expect, jest, beforeAll, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
+import { app } from '../../server';
+import { v2 as cloudinary } from 'cloudinary';
+import OpenAI from 'openai';
 
 // Mock OpenAI
 jest.mock('openai', () => {
-  const mockCreate = jest.fn();
-  return jest.fn(() => ({
+  return jest.fn().mockImplementation(() => ({
     chat: {
       completions: {
-        create: mockCreate
+        create: jest.fn().mockResolvedValue({
+          choices: [{ message: { content: 'Test nickname' } }]
+        })
       }
     }
   }));
@@ -43,17 +47,17 @@ describe('Image API Integration Tests', () => {
     const OpenAI = jest.requireMock('openai');
     mockOpenAI = new OpenAI();
     cloudinary = jest.requireMock('cloudinary');
+
+    // Mock Cloudinary uploader
+    (cloudinary.uploader.upload as jest.Mock).mockResolvedValue({
+      secure_url: 'https://res.cloudinary.com/test/image/upload/test123',
+      public_id: 'test123'
+    });
+    (cloudinary.uploader.destroy as jest.Mock).mockResolvedValue({ result: 'ok' });
   });
 
   describe('POST /api/images/upload', () => {
     it('should upload image successfully', async () => {
-      const mockCloudinaryResponse = {
-        secure_url: 'https://cloudinary.com/test.jpg',
-        public_id: 'test123'
-      };
-
-      cloudinary.v2.uploader.upload.mockResolvedValue(mockCloudinaryResponse);
-
       const response = await request(app)
         .post('/api/images/upload')
         .send({
@@ -61,20 +65,11 @@ describe('Image API Integration Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({
-        url: mockCloudinaryResponse.secure_url,
-        public_id: mockCloudinaryResponse.public_id
-      });
+      expect(response.body).toHaveProperty('url', 'https://res.cloudinary.com/test/image/upload/test123');
+      expect(response.body).toHaveProperty('public_id', 'test123');
     });
 
     it('should handle rate limiting', async () => {
-      const mockCloudinaryResponse = {
-        secure_url: 'https://cloudinary.com/test.jpg',
-        public_id: 'test123'
-      };
-
-      cloudinary.v2.uploader.upload.mockResolvedValue(mockCloudinaryResponse);
-
       // Make maximum allowed requests
       for (let i = 0; i < 10; i++) {
         await request(app)
@@ -155,8 +150,6 @@ describe('Image API Integration Tests', () => {
 
   describe('DELETE /api/images/:id', () => {
     it('should delete image successfully', async () => {
-      cloudinary.v2.uploader.destroy.mockResolvedValue({ result: 'ok' });
-
       const response = await request(app)
         .delete('/api/images/test123');
 
@@ -167,7 +160,7 @@ describe('Image API Integration Tests', () => {
     });
 
     it('should handle non-existent images', async () => {
-      cloudinary.v2.uploader.destroy.mockResolvedValue({ result: 'not found' });
+      (cloudinary.uploader.destroy as jest.Mock).mockResolvedValue({ result: 'not found' });
 
       const response = await request(app)
         .delete('/api/images/nonexistent');
