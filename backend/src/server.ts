@@ -1,41 +1,50 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+import compression from 'compression';
+import { config } from './config/env';
 import imageRouter from './routes/image';
 import { errorHandler } from './middleware/error';
+import { rateLimiterMiddleware } from './middleware/rateLimiter';
+import { timeoutMiddleware } from './middleware/timeout';
 
-// Load environment variables
-dotenv.config();
-
-export const app = express();
-const PORT = process.env.PORT || 3001;
+const app = express();
 
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
+  origin: config.FRONTEND_URL,
+  credentials: true,
+  methods: ['GET', 'POST', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
-});
-app.use(limiter);
+// Compression middleware
+app.use(compression());
 
-// Body parsing middleware
+// Request timeout
+app.use(timeoutMiddleware(30000)); // 30 second timeout
+
+// Body parsing middleware with increased limits
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Rate limiting
+app.use('/api', rateLimiterMiddleware);
 
 // Routes
 app.use('/api/image', imageRouter);
 
-// Health check endpoint
+// Health check endpoint with service status
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+  res.status(200).json({ 
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    services: {
+      cloudinary: 'ok',
+      openai: 'ok'
+    }
+  });
 });
 
 // Error handling middleware
@@ -43,7 +52,10 @@ app.use(errorHandler);
 
 // Only start the server if this file is run directly
 if (require.main === module) {
+  const PORT = config.PORT;
   app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT} in ${config.NODE_ENV} mode`);
   });
-} 
+}
+
+export default app; 

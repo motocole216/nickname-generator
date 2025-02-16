@@ -9,12 +9,21 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  maxBodyLength: Infinity, // Allow large payloads for base64 images
+  maxContentLength: Infinity,
 });
 
 export const uploadImage = async (imageData: string) => {
   return withRetry(async () => {
-    const response = await apiClient.post('/image/upload', { image: imageData });
-    return response.data;
+    try {
+      const response = await apiClient.post('/image/upload', { image: imageData });
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw error;
+    }
   });
 };
 

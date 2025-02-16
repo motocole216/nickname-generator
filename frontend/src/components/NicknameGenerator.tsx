@@ -14,48 +14,31 @@ const NicknameGenerator: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const [lastFile, setLastFile] = useState<File | null>(null);
+  const [lastImage, setLastImage] = useState<string | null>(null);
 
-  const handleImageUpload = async (file: File) => {
+  const handleImageUpload = async (base64Image: string) => {
     setLoading(true);
     setError('');
     setResult(null);
-    setLastFile(file);
+    setLastImage(base64Image);
 
     try {
-      // Convert file to base64
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
+      // Upload image with retry
+      const uploadResult = await uploadImage(base64Image);
       
-      reader.onload = async () => {
-        try {
-          const base64Image = reader.result as string;
-          
-          // Upload image with retry
-          const uploadResult = await uploadImage(base64Image);
-          
-          // Generate nickname with retry and caching
-          const nicknameResult = await generateNickname(uploadResult.url);
-          
-          setResult({
-            nickname: nicknameResult.data.nickname,
-            analysis: nicknameResult.data.analysis,
-            cached: nicknameResult.cached
-          });
-          
-          setRetryCount(0); // Reset retry count on success
-        } catch (err: any) {
-          const errorMessage = err.response?.data?.error || 'Failed to process image';
-          setError(errorMessage);
-          setRetryCount(prev => prev + 1);
-        }
-      };
-
-      reader.onerror = () => {
-        setError('Failed to read image file');
-      };
-    } catch (err) {
-      setError('Failed to process image');
+      // Generate nickname with retry and caching
+      const nicknameResult = await generateNickname(uploadResult.imageUrl);
+      
+      setResult({
+        nickname: nicknameResult.data.nickname,
+        analysis: nicknameResult.data.analysis,
+        cached: nicknameResult.cached
+      });
+      
+      setRetryCount(0); // Reset retry count on success
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error || 'Failed to process image';
+      setError(errorMessage);
       setRetryCount(prev => prev + 1);
     } finally {
       setLoading(false);
@@ -63,13 +46,13 @@ const NicknameGenerator: React.FC = () => {
   };
 
   const handleRetry = () => {
-    if (retryCount < 3 && lastFile) {
+    if (retryCount < 3 && lastImage) {
       setError('');
       setResult(null);
       // The retry logic is handled by the withRetry utility
-      handleImageUpload(lastFile);
+      handleImageUpload(lastImage);
     } else {
-      setError('Maximum retry attempts reached or no file to retry. Please try again later.');
+      setError('Maximum retry attempts reached or no image to retry. Please try again later.');
     }
   };
 
@@ -84,7 +67,7 @@ const NicknameGenerator: React.FC = () => {
       {error && (
         <div className="mt-4 p-4 bg-red-50 rounded-lg">
           <p className="text-red-700">{error}</p>
-          {retryCount < 3 && lastFile && (
+          {retryCount < 3 && lastImage && (
             <button
               onClick={handleRetry}
               className="mt-2 text-sm font-medium text-red-600 hover:text-red-500"

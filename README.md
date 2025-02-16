@@ -5,7 +5,7 @@ A fun web application that generates creative and humorous nicknames based on up
 ## Features
 
 - Photo upload functionality
-- AI-powered image analysis using GPT-4 Vision
+- AI-powered nickname generation using GPT-4
 - Generation of personalized, funny nicknames
 - Instant results display
 - User-friendly interface with modern design
@@ -17,7 +17,7 @@ A fun web application that generates creative and humorous nicknames based on up
 
 - Frontend: React.js with TypeScript
 - Backend: Node.js/Express with TypeScript
-- AI Integration: OpenAI GPT-4 Vision API
+- AI Integration: OpenAI GPT-4 API
 - Image Storage: Cloudinary
 - Styling: Tailwind CSS (with PostCSS 7 compatibility)
 - Caching: node-cache (backend), in-memory Map (frontend)
@@ -26,7 +26,7 @@ A fun web application that generates creative and humorous nicknames based on up
 
 - Node.js (v14 or higher)
 - NPM or Yarn
-- OpenAI API key (GPT-4 Vision access required)
+- OpenAI API key (with access to GPT-4 models)
 - Cloudinary account
 
 ## Setup Instructions
@@ -44,13 +44,6 @@ A fun web application that generates creative and humorous nicknames based on up
    npm install
    ```
 
-   Update the OpenAI API key in `src/controllers/image.ts`:
-   ```typescript
-   const openai = new OpenAI({
-     apiKey: 'your-api-key-here'
-   });
-   ```
-
 3. Set up the frontend:
    ```bash
    cd frontend
@@ -59,17 +52,24 @@ A fun web application that generates creative and humorous nicknames based on up
    npm install tailwindcss@npm:@tailwindcss/postcss7-compat @tailwindcss/postcss7-compat postcss@^7 autoprefixer@^9
    ```
 
-   Note: The project uses a specific Tailwind CSS configuration for PostCSS 7 compatibility. The PostCSS configuration is already set up in `postcss.config.js`:
-   ```javascript
-   module.exports = {
-     plugins: {
-       '@tailwindcss/postcss7-compat': {},
-       autoprefixer: {},
-     },
-   }
-   ```
+4. Configure your environment variables:
 
-4. Start the development servers:
+### Backend (.env)
+```env
+PORT=3001
+NODE_ENV=development
+FRONTEND_URL=http://localhost:3002
+
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
+
+5. Start the development servers:
    ```bash
    # Terminal 1 - Backend
    cd backend
@@ -80,7 +80,16 @@ A fun web application that generates creative and humorous nicknames based on up
    npm start
    ```
 
-5. Open your browser and navigate to `http://localhost:3000`
+6. Open your browser and navigate to `http://localhost:3002`
+
+## Recent Updates
+
+### Version 1.1.0
+- Updated OpenAI integration to use GPT-4 Turbo for nickname generation
+- Improved error handling and logging for AI service calls
+- Enhanced retry mechanism for failed API requests
+- Updated environment configuration to use `.env` files consistently
+- Fixed CORS configuration for local development
 
 ## Environment Variables
 

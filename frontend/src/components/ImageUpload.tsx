@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 
 interface ImageUploadProps {
-  onUpload: (file: File) => void;
+  onUpload: (base64Image: string) => void;
   isLoading: boolean;
 }
 
@@ -37,14 +37,29 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, isLoading }) => {
   };
 
   const handleFile = (file: File) => {
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-      onUpload(file);
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
     }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size exceeds 5MB limit');
+      return;
+    }
+
+    const reader = new FileReader();
+    
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setPreviewUrl(base64String);
+      onUpload(base64String);
+    };
+
+    reader.onerror = () => {
+      alert('Error reading file');
+    };
+
+    reader.readAsDataURL(file);
   };
 
   return (
