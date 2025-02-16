@@ -247,7 +247,25 @@ The application includes robust image processing capabilities:
 
 ### Testing Coverage
 - Comprehensive unit tests for all image operations
-- Mock integration with Cloudinary
-- Error case handling
-- Validation testing
-- API endpoint testing
+- Integration tests for API endpoints
+- Mock implementations for OpenAI and Cloudinary
+- Rate limiter testing
+- Test setup and teardown utilities
+- Custom Jest matchers for response validation
+
+### Rate Limiting
+- Custom rate limiter implementation
+- IP-based request tracking
+- Configurable time windows (default: 15 minutes)
+- Adjustable request limits (default: 10 requests per window)
+- Automatic counter reset
+- Memory-efficient using Map data structure
+
+### Recent Updates
+- Added comprehensive test suite for image controllers
+- Implemented custom rate limiter with cleanup
+- Added integration tests for API endpoints
+- Improved mock implementations for external services
+- Enhanced error handling in tests
+- Added test utilities and custom matchers
+- Implemented proper test cleanup and teardown
