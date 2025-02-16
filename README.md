@@ -196,3 +196,26 @@ Each task should be completed and validated before moving to the next one. This 
 - Stable feature implementation
 - Clear progress tracking
 - Easier collaboration
+
+## Backend Infrastructure Details
+
+The backend is built with Express and TypeScript, featuring:
+
+- **Error Handling**: Custom error classes and middleware for consistent error responses
+- **Input Validation**: Request validation using express-validator
+- **Security Measures**:
+  - Helmet for secure HTTP headers
+  - CORS configuration with origin control
+  - Rate limiting (100 requests per 15 minutes)
+  - Request size limits (10MB)
+  - Body parsing security
+
+### Error Types
+- `AppError`: Base error class for application-specific errors
+- `ValidationError`: For request validation failures
+
+### Middleware
+- Error handling middleware for consistent error responses
+- Validation middleware using express-validator
+- Security middleware (helmet, cors, rate-limiting)
+- Body parsing middleware with size limits
