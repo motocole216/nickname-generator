@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { v2 as cloudinary } from 'cloudinary';
 import OpenAI from 'openai';
+import { cacheService } from '../services/cache';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -125,32 +126,158 @@ export const cleanupUnusedImages = async (req: Request, res: Response) => {
 export const generateNickname = async (req: Request, res: Response) => {
   try {
     const { imageUrl } = req.body;
-    
+
     if (!imageUrl) {
       return res.status(400).json({ error: 'No image URL provided' });
     }
 
-    const response = await openai.chat.completions.create({
+    // Check cache first
+    const cacheKey = `nickname:${imageUrl}`;
+    const cachedResult = cacheService.get<{ nickname: string, analysis: string }>(cacheKey);
+    
+    if (cachedResult) {
+      return res.status(200).json({
+        success: true,
+        data: cachedResult,
+        cached: true
+      });
+    }
+
+    // If not in cache, generate new nickname
+    const imageAnalysis = await openai.chat.completions.create({
       model: "gpt-4-vision-preview",
       messages: [
         {
           role: "user",
           content: [
-            { type: "text", text: "Generate a fun, creative nickname based on this image. Keep it friendly and appropriate." },
-            { type: "image_url", image_url: imageUrl }
+            { type: "text", text: "Analyze this image and describe the main subject, focusing on notable features, colors, and characteristics that could inspire a creative nickname. Be concise." },
+            { type: "image_url", image_url: { url: imageUrl } }
           ],
         },
       ],
+      max_tokens: 150,
     });
 
-    if (!response?.choices?.[0]?.message?.content) {
-      throw new Error('Invalid response from OpenAI');
-    }
+    const imageDescription = imageAnalysis.choices[0]?.message?.content || '';
 
-    const nickname = response.choices[0].message.content;
-    res.status(200).json({ nickname });
+    const nicknameResponse = await openai.chat.completions.create({
+      model: "gpt-4-turbo-preview",
+      messages: [
+        {
+          role: "system",
+          content: "You are a creative nickname generator. Generate a fun, memorable, and appropriate nickname based on the image description provided. The nickname should be 1-3 words long and suitable for all audiences."
+        },
+        {
+          role: "user",
+          content: `Based on this image description, generate a creative nickname: ${imageDescription}`
+        }
+      ],
+      max_tokens: 50,
+      temperature: 0.8,
+    });
+
+    const nickname = nicknameResponse.choices[0]?.message?.content?.trim() || 'Mysterious Being';
+
+    const result = {
+      nickname,
+      analysis: imageDescription
+    };
+
+    // Cache the result
+    cacheService.set(cacheKey, result);
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+      cached: false
+    });
+
   } catch (error) {
     console.error('Error generating nickname:', error);
     res.status(500).json({ error: 'Failed to generate nickname' });
+  }
+};
+
+// Rate limiting middleware
+export const rateLimiter = {
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  maxRequests: new Map<string, number>(),
+  maxRequestsPerWindow: 10, // Maximum requests per window
+
+  resetCounter: function() {
+    this.maxRequests.clear();
+  },
+
+  increment: function(ip: string): boolean {
+    const currentRequests = this.maxRequests.get(ip) || 0;
+    if (currentRequests >= this.maxRequestsPerWindow) {
+      return false;
+    }
+    this.maxRequests.set(ip, currentRequests + 1);
+    return true;
+  }
+};
+
+// Reset the rate limiter counter every window
+export const rateLimiterInterval = setInterval(() => rateLimiter.resetCounter(), rateLimiter.windowMs);
+
+export const generateImage = async (req: Request, res: Response) => {
+  try {
+    const { prompt } = req.body;
+
+    if (!prompt) {
+      return res.status(400).json({ error: 'No prompt provided' });
+    }
+
+    // Check rate limit
+    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+    if (!rateLimiter.increment(clientIp)) {
+      return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+    }
+
+    // Generate image description using OpenAI
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-vision-preview",
+      messages: [
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      max_tokens: 500
+    });
+
+    const imageDescription = response.choices[0]?.message?.content;
+    if (!imageDescription) {
+      throw new Error('Failed to generate image description');
+    }
+
+    // Upload image to Cloudinary (imageDescription is now guaranteed to be string)
+    const uploadResult = await cloudinary.uploader.upload(imageDescription, {
+      folder: 'nicknames'
+    });
+
+    res.status(200).json({
+      imageUrl: uploadResult.secure_url,
+      publicId: uploadResult.public_id
+    });
+  } catch (error) {
+    console.error('Error generating image:', error);
+    res.status(500).json({ error: 'Failed to generate image description' });
+  }
+};
+
+export const listImages = async (req: Request, res: Response) => {
+  try {
+    const result = await cloudinary.search
+      .expression('folder:nicknames')
+      .execute();
+
+    res.status(200).json({
+      images: result.resources
+    });
+  } catch (error) {
+    console.error('Error listing images:', error);
+    res.status(500).json({ error: 'Failed to list images' });
   }
 }; 

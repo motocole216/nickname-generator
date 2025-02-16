@@ -9,6 +9,9 @@ A fun web application that generates creative and humorous nicknames based on up
 - Generation of personalized, funny nicknames
 - Instant results display
 - User-friendly interface with modern design
+- Results caching for improved performance
+- Automatic retry mechanism for failed requests
+- Real-time loading and error states
 
 ## Tech Stack
 
@@ -17,6 +20,7 @@ A fun web application that generates creative and humorous nicknames based on up
 - AI Integration: OpenAI GPT-4 Vision API
 - Image Storage: Cloudinary
 - Styling: Tailwind CSS (with PostCSS 7 compatibility)
+- Caching: node-cache (backend), in-memory Map (frontend)
 
 ## Prerequisites
 
@@ -103,14 +107,18 @@ A fun web application that generates creative and humorous nicknames based on up
 ├── backend/                 # Backend server
 │   ├── src/                # Source files
 │   │   ├── controllers/    # Request handlers
-│   │   ├── routes/        # API routes
-│   │   └── server.ts      # Server entry point
-│   └── package.json       # Backend dependencies
+│   │   ├── middleware/     # Custom middleware (retry, etc.)
+│   │   ├── services/       # Business logic and services
+│   │   ├── routes/         # API routes
+│   │   └── server.ts       # Server entry point
+│   └── package.json        # Backend dependencies
 │
-└── frontend/              # Frontend application
-    ├── src/              # Source files
-    │   ├── components/   # React components
+└── frontend/               # Frontend application
+    ├── src/               # Source files
+    │   ├── components/    # React components
     │   ├── api/          # API client
+    │   ├── utils/        # Utility functions (cache, retry)
+    │   ├── pages/        # Page components
     │   └── App.tsx       # Main application
     └── package.json      # Frontend dependencies
 ```
@@ -269,3 +277,35 @@ The application includes robust image processing capabilities:
 - Enhanced error handling in tests
 - Added test utilities and custom matchers
 - Implemented proper test cleanup and teardown
+
+## Caching System
+
+The application implements a two-layer caching system for improved performance:
+
+### Frontend Cache
+- In-memory Map-based cache
+- 24-hour TTL for nickname results
+- Automatic cache invalidation
+- Cache hit indicator in UI
+
+### Backend Cache
+- node-cache implementation
+- Configurable TTL and check periods
+- Memory-efficient storage
+- Automatic cleanup of expired items
+
+## Retry Mechanism
+
+The application includes a robust retry system for handling transient failures:
+
+### Frontend Retry
+- Exponential backoff strategy
+- Configurable max attempts (default: 3)
+- Selective retry based on error types
+- User-friendly retry UI
+
+### Backend Retry
+- Middleware-based retry mechanism
+- Configurable retry parameters
+- Error type filtering
+- Automatic request replay

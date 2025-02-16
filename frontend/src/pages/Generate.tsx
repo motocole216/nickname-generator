@@ -1,45 +1,28 @@
-import React, { useState } from 'react';
-import ImageUpload from '../components/ImageUpload';
-import ResultsDisplay from '../components/ResultsDisplay';
+import React from 'react';
+import NicknameGenerator from '../components/NicknameGenerator';
 
 const Generate: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [results, setResults] = useState<string[]>([]);
-
-  const handleImageUpload = async (file: File) => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // TODO: Implement API call to backend
-      // For now, just simulate a delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setResults(['Nickname 1', 'Nickname 2', 'Nickname 3']);
-    } catch (err) {
-      setError('Failed to generate nicknames. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <div className="max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-        Generate Your Nicknames
-      </h1>
-      
-      <ImageUpload onUpload={handleImageUpload} isLoading={isLoading} />
-      
-      {error && (
-        <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-md">
-          {error}
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Generate Your AI Nickname
+          </h1>
+          <p className="text-lg text-gray-600">
+            Upload a photo and let our AI create a unique nickname just for you!
+          </p>
         </div>
-      )}
-      
-      {results.length > 0 && (
-        <ResultsDisplay results={results} />
-      )}
+        
+        <NicknameGenerator />
+        
+        <div className="mt-12 text-center text-sm text-gray-500">
+          <p>
+            Our AI analyzes your photo and generates a creative nickname based on what it sees.
+            Results are cached for 24 hours for faster retrieval.
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
